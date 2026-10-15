@@ -1,0 +1,60 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.86680,0.79750,0.73435,1.00000",
+      "display-p3:0.95545,0.93299,0.89719,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "blur-material" : 0.5,
+      "layers" : [
+        {
+          "fill" : "automatic",
+          "glass" : true,
+          "hidden" : true,
+          "image-name" : "imageNoBackground.png",
+          "name" : "imageNoBackground",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -2.897817972005964,
+              46.62636622170252
+            ]
+          }
+        },
+        {
+          "hidden" : true,
+          "image-name" : "Clio.png",
+          "name" : "Clio",
+          "position" : {
+            "scale" : 1.13,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "hidden" : false,
+          "image-name" : "ClioNoBackground.png",
+          "name" : "ClioNoBackground"
+        }
+      ],
+      "lighting" : "individual",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 1
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}

@@ -1,0 +1,351 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isShortString(value, max) {
+      return value is string && value.size() > 0 && value.size() <= max;
+    }
+
+    function optionalShortString(value, max) {
+      return value == null || (value is string && value.size() <= max);
+    }
+
+    function isStringList(value, maxItems, maxItemLength) {
+      return value is list
+        && value.size() <= maxItems
+        && (value.size() < 1 || isShortString(value[0], maxItemLength))
+        && (value.size() < 2 || isShortString(value[1], maxItemLength))
+        && (value.size() < 3 || isShortString(value[2], maxItemLength))
+        && (value.size() < 4 || isShortString(value[3], maxItemLength))
+        && (value.size() < 5 || isShortString(value[4], maxItemLength))
+        && (value.size() < 6 || isShortString(value[5], maxItemLength))
+        && (value.size() < 7 || isShortString(value[6], maxItemLength))
+        && (value.size() < 8 || isShortString(value[7], maxItemLength))
+        && (value.size() < 9 || isShortString(value[8], maxItemLength))
+        && (value.size() < 10 || isShortString(value[9], maxItemLength))
+        && (value.size() < 11 || isShortString(value[10], maxItemLength))
+        && (value.size() < 12 || isShortString(value[11], maxItemLength));
+    }
+
+    function validUserDocument() {
+      return request.resource.data.keys().hasOnly([
+        'schemaVersion',
+        'createdAt',
+        'updatedAt',
+        'displayName',
+        'primaryEmail',
+        'emailVerified',
+        'providerIDs',
+        'onboardingCompletedAt',
+        'acceptedTermsVersion',
+        'acceptedPrivacyVersion',
+        'lastSeenAt'
+      ]);
+    }
+
+    function validAccountSettings() {
+      return request.resource.data.keys().hasOnly([
+        'schemaVersion',
+        'updatedAt',
+        'updatedByDeviceID',
+        'outputPreset',
+        'cleanupModel',
+        'sourceLanguageMode',
+        'sourceLanguageCode',
+        'outputLanguageMode',
+        'outputLanguageCode',
+        'autoLearnDictionaryTermsEnabled'
+      ])
+      && isShortString(request.resource.data.outputPreset, 64)
+      && isShortString(request.resource.data.cleanupModel, 128)
+      && isShortString(request.resource.data.sourceLanguageMode, 32)
+      && isShortString(request.resource.data.sourceLanguageCode, 16)
+      && isShortString(request.resource.data.outputLanguageMode, 32)
+      && isShortString(request.resource.data.outputLanguageCode, 16)
+      && request.resource.data.autoLearnDictionaryTermsEnabled is bool
+      && optionalShortString(request.resource.data.updatedByDeviceID, 128);
+    }
+
+    function validPrivacySettings() {
+      return request.resource.data.keys().hasOnly([
+        'schemaVersion',
+        'cloudTranscriptStorageEnabled',
+        'privacyModeEnabled',
+        'improvementSharingEnabled',
+        'uploadDeviceSummariesEnabled',
+        'updatedByDeviceID',
+        'updatedAt'
+      ])
+      && request.resource.data.cloudTranscriptStorageEnabled == false
+      && request.resource.data.privacyModeEnabled is bool
+      && request.resource.data.improvementSharingEnabled is bool
+      && (
+        request.resource.data.privacyModeEnabled == false
+        || request.resource.data.improvementSharingEnabled == false
+      )
+      && request.resource.data.uploadDeviceSummariesEnabled is bool
+      && optionalShortString(request.resource.data.updatedByDeviceID, 128);
+    }
+
+    function validDictionaryTerm() {
+      return request.resource.data.keys().hasOnly([
+        'schemaVersion',
+        'updatedAt',
+        'updatedByDeviceID',
+        'text',
+        'normalizedKey',
+        'status',
+        'source',
+        'knownVariants'
+      ])
+      && isShortString(request.resource.data.text, 120)
+      && isShortString(request.resource.data.normalizedKey, 180)
+      && request.resource.data.status in ['active', 'disabled']
+      && request.resource.data.source in ['manual', 'learned']
+      && isStringList(request.resource.data.knownVariants, 12, 120)
+      && optionalShortString(request.resource.data.updatedByDeviceID, 128);
+    }
+
+    function validDeviceDocument(deviceId) {
+      return request.resource.data.keys().hasOnly([
+        'deviceID',
+        'platform',
+        'appVersion',
+        'buildNumber',
+        'osVersion',
+        'deviceModel',
+        'firstSeenAt',
+        'lastSeenAt',
+        'schemaVersion'
+      ])
+      && request.resource.data.deviceID == deviceId
+      && isShortString(request.resource.data.platform, 24)
+      && optionalShortString(request.resource.data.appVersion, 32)
+      && optionalShortString(request.resource.data.buildNumber, 32)
+      && optionalShortString(request.resource.data.osVersion, 128)
+      && optionalShortString(request.resource.data.deviceModel, 128);
+    }
+
+    function validDeviceSettings() {
+      return request.resource.data.keys().hasOnly([
+        'cleanupModel',
+        'dictationSoundEffectsEnabled',
+        'updatedAt'
+      ])
+      && isShortString(request.resource.data.cleanupModel, 128)
+      && request.resource.data.dictationSoundEffectsEnabled is bool;
+    }
+
+    function validDeviceSummary() {
+      return request.resource.data.keys().hasOnly([
+        'schemaVersion',
+        'dictionaryTermCount',
+        'updatedAt'
+      ])
+      && request.resource.data.dictionaryTermCount is int
+      && request.resource.data.dictionaryTermCount >= 0
+      && request.resource.data.dictionaryTermCount <= 5000;
+    }
+
+    function validKeyboardDogfoodEvent() {
+      return request.resource.data.keys().hasOnly([
+        'uploadSchemaVersion',
+        'schemaVersion',
+        'eventIdHash',
+        'sessionIdHash',
+        'installCohortHash',
+        'createdAtBucket',
+        'appVersion',
+        'keyboardEngineVersion',
+        'language',
+        'locale',
+        'layout',
+        'deviceClass',
+        'orientation',
+        'fieldType',
+        'eventType',
+        'correctionClass',
+        'candidateClass',
+        'visibleSlot',
+        'confidenceBucket',
+        'policyAction',
+        'tokenLengthBucket',
+        'contextLengthBucket',
+        'prefixState',
+        'protectedContext',
+        'protectedNearMiss',
+        'experimentFlags',
+        'latencyBucket',
+        'accepted',
+        'reverted',
+        'backspaceWithin2s',
+        'stale',
+        'uploadedAt',
+        'uploadedByDeviceID'
+      ])
+      && request.resource.data.uploadSchemaVersion == 1
+      && request.resource.data.schemaVersion == 2
+      && isShortString(request.resource.data.eventIdHash, 128)
+      && isShortString(request.resource.data.sessionIdHash, 128)
+      && optionalShortString(request.resource.data.installCohortHash, 128)
+      && isShortString(request.resource.data.createdAtBucket, 32)
+      && isShortString(request.resource.data.appVersion, 64)
+      && isShortString(request.resource.data.keyboardEngineVersion, 128)
+      && isShortString(request.resource.data.language, 16)
+      && isShortString(request.resource.data.locale, 32)
+      && request.resource.data.layout in ['qwerty', 'numbers', 'symbols', 'unknown']
+      && request.resource.data.deviceClass in ['phone', 'tablet', 'simulator', 'unknown']
+      && request.resource.data.orientation in ['portrait', 'landscape', 'unknown']
+      && request.resource.data.fieldType in ['prose', 'chat', 'search', 'email', 'url', 'phone', 'number', 'secure', 'code_like', 'unknown']
+      && request.resource.data.eventType in [
+        'suggestion_shown',
+        'suggestion_accepted',
+        'raw_suggestion_selected',
+        'suggestion_ignored',
+        'prefix_completion_miss',
+        'autocorrect_applied',
+        'autocorrect_reverted',
+        'backspace_after_autocorrect',
+        'stale_suggestion_dropped',
+        'stale_suggestion_displayed',
+        'confidence_pill_shown',
+        'confidence_pill_accepted',
+        'confidence_pill_ignored',
+        'protected_near_miss',
+        'field_guardrail_applied',
+        'emoji_suggestion_shown',
+        'emoji_suggestion_accepted',
+        'emoji_suggestion_missing',
+        'sentence_assist_shown',
+        'sentence_assist_accepted',
+        'sentence_assist_dismissed',
+        'rare_word_overcommon',
+        'latency_hitch',
+        'touch_ambiguity',
+        'spatial_override_used',
+        'manual_report_started',
+        'manual_report_submitted'
+      ]
+      && request.resource.data.correctionClass in [
+        'adjacent_key',
+        'capitalization',
+        'completion',
+        'contraction',
+        'emoji',
+        'emoji_missing',
+        'false_split',
+        'grammar',
+        'latency',
+        'missing_space',
+        'next_word',
+        'none',
+        'protected_field',
+        'protected_suppression',
+        'punctuation',
+        'prefix_failure',
+        'rare_word_overcommon',
+        'sentence_assist',
+        'stale_suggestion',
+        'syntax',
+        'touch_forgiveness',
+        'ui_confidence'
+      ]
+      && request.resource.data.candidateClass in [
+        'raw_token',
+        'correction',
+        'completion',
+        'next_word',
+        'emoji',
+        'phrase',
+        'lexicon_prefix',
+        'punctuation',
+        'missing_space',
+        'rare_word',
+        'sentence_assist',
+        'protected_suppressed',
+        'none'
+      ]
+      && request.resource.data.visibleSlot in ['left', 'center', 'right', 'inline', 'review_card', 'none']
+      && request.resource.data.confidenceBucket in ['none', 'low', 'medium', 'high', 'very_high']
+      && request.resource.data.policyAction in ['display_only', 'pending_correction', 'delimiter_autocorrect', 'live_autocorrect', 'sentence_review', 'suppressed', 'ignored']
+      && request.resource.data.tokenLengthBucket in ['zero', 'one_to_two', 'three_to_five', 'six_to_ten', 'eleven_plus']
+      && request.resource.data.contextLengthBucket in ['zero', 'short', 'medium', 'long']
+      && request.resource.data.prefixState in ['empty', 'prefix', 'complete_word', 'unknown']
+      && request.resource.data.latencyBucket in ['under_5ms', 'ms_5_to_10', 'ms_10_to_20', 'ms_20_to_50', 'over_50ms', 'unknown']
+      && request.resource.data.protectedContext is bool
+      && request.resource.data.protectedNearMiss is bool
+      && isStringList(request.resource.data.experimentFlags, 12, 64)
+      && request.resource.data.accepted is bool
+      && request.resource.data.reverted is bool
+      && request.resource.data.backspaceWithin2s is bool
+      && request.resource.data.stale is bool
+      && request.resource.data.uploadedAt is timestamp
+      && optionalShortString(request.resource.data.uploadedByDeviceID, 128);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && validUserDocument();
+      allow delete: if isOwner(userId);
+
+      match /settings/account {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validAccountSettings();
+        allow delete: if isOwner(userId);
+      }
+
+      match /settings/privacy {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validPrivacySettings();
+        allow delete: if isOwner(userId);
+      }
+
+      match /dictionary/{termId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validDictionaryTerm();
+        allow delete: if isOwner(userId);
+      }
+
+      match /devices/{deviceId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validDeviceDocument(deviceId);
+        allow delete: if isOwner(userId);
+
+        match /settings/current {
+          allow read: if isOwner(userId);
+          allow create, update: if isOwner(userId) && validDeviceSettings();
+          allow delete: if isOwner(userId);
+        }
+
+        match /summaries/current {
+          allow read: if isOwner(userId);
+          allow create, update: if isOwner(userId) && validDeviceSummary();
+          allow delete: if isOwner(userId);
+        }
+
+        match /keyboardDogfoodEvents/{eventId} {
+          allow read: if isOwner(userId);
+          allow create, update: if isOwner(userId) && validKeyboardDogfoodEvent();
+          allow delete: if isOwner(userId);
+        }
+
+        match /metricsDaily/{dayId} {
+          allow read, write: if false;
+        }
+      }
+
+      match /aggregates/account {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+  }
+}
